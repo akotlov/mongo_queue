@@ -3,6 +3,7 @@ const fork = require('child_process').fork;
 const path = require('path');
 const Promise = require('bluebird');
 const _ = require('lodash');
+const shortid = require('shortid');
 
 module.exports = function ChildPool() {
   if (!(this instanceof ChildPool)) {
@@ -12,10 +13,12 @@ module.exports = function ChildPool() {
   this.childPool = {};
   this.free = {};
   this.retained = {};
+  this.id = shortid();
+  console.log(this.id);
 
-  this.retain = Promise.method((processFile) => {
+  this.retain = Promise.method(processFile => {
     let child = this.getFree(processFile).pop();
-    // console.log("free: ", this.free)
+    // console.log('free: ', this.free, child);
 
     if (child) {
       return child;
@@ -23,26 +26,26 @@ module.exports = function ChildPool() {
 
     child = fork(path.join(__dirname, './master.js'));
     child.processFile = processFile;
-    // console.log(child)
 
     this.retained[child.pid] = child;
+    // console.log('this.retained ', this.retained);
 
     child.on('exit', this.remove.bind(this, child));
 
     const send = msg =>
-      new Promise((resolve) => {
+      new Promise(resolve => {
         child.send(msg, resolve);
       });
 
-    return send({ cmd: 'init', value: processFile }).return(child);
+    return send({ cmd: 'init', value: processFile, processPID: child.pid }).return(child);
   });
 
-  this.release = (child) => {
+  this.release = child => {
     delete this.retained[child.pid];
     this.getFree(child.processFile).push(child);
   };
 
-  this.remove = (child) => {
+  this.remove = child => {
     delete this.retained[child.pid];
 
     const free = this.getFree(child.processFile);
@@ -61,7 +64,7 @@ module.exports = function ChildPool() {
   this.clean = () => {
     const children = _.values(this.retained).concat(this.getAllFree());
     const _this = this;
-    children.forEach((child) => {
+    children.forEach(child => {
       // TODO: We may want to use SIGKILL if the process does not die after some time.
       _this.kill(child, 'SIGTERM');
     });

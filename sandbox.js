@@ -1,8 +1,8 @@
 // eslint-disable-next-line no-console
 const Promise = require('bluebird');
 
-module.exports = (processFile, childPool) => {
-  return function process(job) {
+module.exports = (processFile, childPool) =>
+  function process(job) {
     // retain returns forked 'master' process
     return childPool.retain(processFile).then(child => {
       child.send({
@@ -16,7 +16,7 @@ module.exports = (processFile, childPool) => {
           switch (msg.cmd) {
             case 'completed':
               child.removeListener('message', handler);
-              resolve(msg.value);
+              resolve({ value: msg.value, childProcessPID: msg.childProcessPID });
               break;
             case 'failed':
             case 'error':
@@ -39,4 +39,3 @@ module.exports = (processFile, childPool) => {
       });
     });
   };
-};

@@ -15,8 +15,10 @@ class Job {
     this.jobId = jobId;
     this.data = data;
     this.opts = opts;
-    this.status = 'wait';
     this.name = '__default__';
+    this.stacktrace = [];
+    this.returnvalue = null;
+    this.attemptsMade = 0;
   }
   add() {
     const job = { name: this.name, jobID: this.jobId, data: this.data };
@@ -27,12 +29,7 @@ class Job {
         console.log(err);
       });
   }
-  completed(job) {
-    this.queue.client.moveToCompleted(job, (err, result) => {
-      if (err) console.log(err);
-      this.queue.emit('completed', job, result, 'active');
-    });
-  }
+  completed(job) {}
 
   remove() {}
 }

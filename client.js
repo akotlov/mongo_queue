@@ -3,9 +3,11 @@
 const EventEmitter = require('events');
 const assert = require('assert');
 
-/*
-should I create one connection to DB per one queue or all queues should 
-share one connection? 
+/* 
+Find how efficiently manage Mongo connections.
+Node thread pool is 4 threads.Whats Mongo default connection pool size is 5.
+To change node process thread pool size: 
+process.env.UV_THREADPOOL_SIZE = 10;
 */
 class Client extends EventEmitter {
   constructor(name, db) {
@@ -76,10 +78,6 @@ class Client extends EventEmitter {
       }
     };
     return collection.findOneAndUpdate(query, update, { returnOriginal: false });
-  }
-
-  remove(id) {
-    this.emit('job-removed', id);
   }
 }
 

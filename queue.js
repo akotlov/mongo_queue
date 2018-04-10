@@ -5,21 +5,6 @@ const shortid = require('shortid');
 const Client = require('./client');
 const Job = require('./job');
 
-// const ChildPool = require('./child-pool');
-// const sandbox = require('./sandbox');
-// const promise = require('./promises');
-
-/* let childPool = ChildPool();
-let process = sandbox('./branch-prediction', childPool)
-
-
-let job = {id: 10};
-
-process(job).then(function (value) {
-  console.log('done processing', value)
-  childPool.clean();
-}); */
-
 class Queue extends EventEmitter {
   constructor(name, db) {
     super();
@@ -71,7 +56,15 @@ class Queue extends EventEmitter {
     const _this = this;
     this.client
       .moveToActive()
-      .then(result => this.processJob(result.value))
+      .then(result => {
+        if (result.value) {
+          this.drained = false;
+          return this.processJob(result.value);
+        }
+        this.drained = true;
+        this.emit('drained', result.value);
+        return null;
+      })
       .catch(err => {
         console.log(err);
       });
@@ -98,7 +91,6 @@ class Queue extends EventEmitter {
       this.childPool = this.childPool || require('./child-pool')();
       const sandbox = require('./sandbox');
       this.handlers[name] = sandbox(handler, this.childPool).bind(this);
-      // console.log(this.handlers[name])
     } else {
       handler = handler.bind(this);
 
@@ -135,18 +127,18 @@ class Queue extends EventEmitter {
     }
 
     function handleCompleted(result) {
-      job.result = result;
+      job.result = result.value;
       return _this.client
         .moveToCompleted(job)
         .then(record => {
-          _this.emit('completed', job, record, 'active');
+          _this.emit('completed', job, record, result.childProcessPID, 'active');
+          // TODO deal with 'job' reference, clean up
         })
         .catch(err => {
           console.log(err);
         });
     }
     // return jobData ? _this.nextJobFromJobData(jobData[0], jobData[1]) : null;
-    // });
 
     function handleFailed(err) {
       const error = err.cause || err; // Handle explicit rejection
@@ -162,6 +154,9 @@ class Queue extends EventEmitter {
       return handleFailed(Error(`Missing process handler for job type ${job.name}`));
     }
     const jobPromise = handler(job.data);
+
+    _this.emit('active', job, jobPromise, 'waiting');
+
     return jobPromise
       .then(handleCompleted)
       .catch(handleFailed)

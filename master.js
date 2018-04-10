@@ -1,5 +1,7 @@
 let status;
 let processor;
+let processPID;
+
 const Promise = require('bluebird');
 
 // https://stackoverflow.com/questions/18391212/is-it-not-possible-to-stringify-an-error-using-json-stringify
@@ -19,19 +21,28 @@ if (!('toJSON' in Error.prototype)) {
   });
 }
 
+function wrapJob(job) {
+  job.progress = progress => {
+    process.send({
+      cmd: 'progress',
+      value: progress
+    });
+  };
+  return job;
+}
+
 process.on('message', msg => {
   switch (msg.cmd) {
     case 'init':
       processor = require(msg.value);
+      processPID = msg.processPID;
       if (processor.default) {
         // support es2015 module.
         processor = processor.default;
       }
       if (processor.length > 1) {
-        // console.log("processor.length > 1")
         processor = Promise.promisify(processor);
       } else {
-        // console.log("processor.length 1")
         processor = Promise.method(processor);
       }
       status = 'IDLE';
@@ -48,16 +59,17 @@ process.on('message', msg => {
       Promise.resolve(processor(wrapJob(msg.job)) || {})
         .then(
           result => {
-            // console.log("master line 53: ", result)
             process.send({
               cmd: 'completed',
-              value: result
+              value: result,
+              childProcessPID: processPID
             });
           },
           err => {
             process.send({
               cmd: 'failed',
-              value: err
+              value: err,
+              childProcessPID: processPID
             });
           }
         )
@@ -71,13 +83,3 @@ process.on('message', msg => {
       console.log('Switch statement fell to default');
   }
 });
-
-function wrapJob(job) {
-  job.progress = progress => {
-    process.send({
-      cmd: 'progress',
-      value: progress
-    });
-  };
-  return job;
-}

@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+const Benchmark = require('benchmark');
 const Queue = require('./queue');
 
 const url = 'mongodb://localhost:27017';
@@ -16,22 +17,30 @@ const init = () => {
 
     const queue = new Queue('test1', db);
     // const queue2 = new Queue('test2', db);
-    queue.process(1, './branch-prediction');
+    setTimeout(() => {
+      queue.process(2, './branch-prediction');
+    }, 3000);
+    // queue2.process(1, './branch-prediction');
 
     const jobData = {
       dataSize: 1000
     };
+
+    const start = new Date();
 
     for (let i = 0; i < 10; i++) {
       queue.add(jobData.dataSize + i);
       // queue2.add(jobData);
     }
 
-    // /queue2.process(1, './branch-prediction');
-
     // queue.on('error');
-    queue.on('completed', (job, record) => {
-      console.log('COMPLETED: ', null, record.value.result);
+    queue.on('completed', (job, record, childProcessPID) => {
+      console.log('COMPLETED: ', null, record.value.result, childProcessPID);
+    });
+    queue.on('drained', result => {
+      const end = new Date();
+      const testRunTime = end.getTime() - start.getTime();
+      console.log(`DRAINED: Operation took ${testRunTime} msec`, result);
     });
   });
 };
