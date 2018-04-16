@@ -22,7 +22,7 @@ class Client extends EventEmitter {
     this.db
       .collection(this.collectionName)
       .createIndex(
-        { createdOn: 1, startTime: 1, completeTime: 1, failTime: 1 },
+        { createdOn: 1 /* , startTime: 1, completeTime: 1, failTime: 1 */ },
         null,
         (err, results) => {
           if (err) return callback(err);
@@ -35,9 +35,9 @@ class Client extends EventEmitter {
     const collection = this.db.collection(this.collectionName);
     return collection.insertOne({
       name: job.name,
-      startedTime: null,
-      completedTime: null,
-      failedlTime: null,
+      startTime: null,
+      completeTime: null,
+      failTime: null,
       createdOn: new Date(),
       result: null,
       status: {
@@ -47,9 +47,7 @@ class Client extends EventEmitter {
         failed: null
       },
       data: {
-        size: job.data.dataSize,
-        source: '/images/image.png',
-        output: '/images/image.jpg'
+        size: job.data.dataSize
       }
     });
   }
@@ -57,9 +55,11 @@ class Client extends EventEmitter {
   moveToActive() {
     const collection = this.db.collection(this.collectionName);
     return collection.findAndModify(
-      { startedTime: null },
-      [['createdOn', 'asc']],
-      { $set: { startedTime: new Date(), 'status.wait': false, 'status.active': true } },
+      { startTime: null },
+      { createdOn: 1 },
+      // [['createdOn', 'asc']],
+      // [['_id', 'asc']],
+      { $set: { startTime: new Date(), 'status.wait': false, 'status.active': true } },
       { new: true }
     );
   }
@@ -71,7 +71,7 @@ class Client extends EventEmitter {
     };
     const update = {
       $set: {
-        completedTime: new Date(),
+        completeTime: new Date(),
         'status.active': false,
         'status.completed': true,
         result: job.result

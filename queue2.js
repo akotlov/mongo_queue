@@ -2,7 +2,7 @@
 
 const EventEmitter = require('events');
 const shortid = require('shortid');
-const Client = require('./client');
+const Client = require('./client2');
 const Job = require('./job');
 
 class Queue extends EventEmitter {
@@ -56,10 +56,10 @@ class Queue extends EventEmitter {
     this.client
       .moveToActive()
       .then(result => {
-        console.log(result);
-        if (result.value) {
+        // console.log('getNextJob ', result);
+        if (result.value !== null) {
           this.drained = false;
-          return this.processJob(result.value);
+          return this.processJob(result.ops[0]);
         }
         this.drained = true;
         this.emit('drained');
@@ -120,6 +120,7 @@ class Queue extends EventEmitter {
   }
 
   processJob(job) {
+    // console.log('processJob ', job);
     const _this = this;
 
     if (!job) {
@@ -128,7 +129,6 @@ class Queue extends EventEmitter {
 
     function handleCompleted(result) {
       job.result = result.value;
-      console.log(result);
       return _this.client
         .moveToCompleted(job)
         .then(record => {

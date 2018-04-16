@@ -56,6 +56,7 @@ process.on('message', msg => {
         });
       }
       status = 'STARTED';
+      // console.log('STARTED ', msg);
       Promise.resolve(processor(wrapJob(msg.job)) || {})
         .then(
           result => {
@@ -68,8 +69,8 @@ process.on('message', msg => {
           err => {
             process.send({
               cmd: 'failed',
-              value: err,
-              childProcessPID: processPID
+              value: err
+              // childProcessPID: processPID
             });
           }
         )

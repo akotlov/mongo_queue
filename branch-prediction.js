@@ -6,8 +6,7 @@ function getRandomInt(min, max) {
 }
 
 module.exports = job => {
-  console.log(job);
-  const data = new Array(3276); // 32768);
+  const data = new Array(3); // 32768);
   const dataSize = data.length;
 
   for (let c = 0; c < dataSize; c++) data[c] = getRandomInt(0, 256);
@@ -17,7 +16,7 @@ module.exports = job => {
   const start = new Date();
   let sum = 0;
 
-  for (let i = 0; i < 100000; i++) {
+  for (let i = 0; i < 10; i++) {
     // Primary loop
     for (let c = 0; c < dataSize; c++) {
       if (data[c] <= 128) {

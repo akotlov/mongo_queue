@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-console
-const fork = require('child_process').fork;
+const { fork } = require('child_process');
 const path = require('path');
 const Promise = require('bluebird');
 const _ = require('lodash');

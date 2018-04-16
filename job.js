@@ -24,13 +24,13 @@ class Job {
     const job = { name: this.name, jobID: this.jobId, data: this.data };
     this.queue.client
       .add(job)
-      .then(result => console.log(result.ops[0]._id))
+      .then(result => 
+        // console.log(result.ops[0].createdOn);
+         result.ops[0]
+      )
       .catch(err => {
         console.log(err);
       });
   }
-  completed(job) {}
-
-  remove() {}
 }
 module.exports = Job;
